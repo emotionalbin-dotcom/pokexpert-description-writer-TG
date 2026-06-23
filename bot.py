@@ -743,13 +743,25 @@ async def mylink(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ You do not have an active license. Please redeem a key first.")
         return
         
-    host = os.environ.get("RENDER_EXTERNAL_URL", "https://dgowdru.onrender.com")
-    hook_url = f"{host}/hook/{user_id}"
-    await update.message.reply_text(
-        f"🔗 **Your Unique Polygon URL:**\n`{hook_url}`\n\n"
-        "Set this as the Backend/Proxy URL in your Polygon settings.",
-        parse_mode="Markdown"
+    host = os.environ.get("RENDER_EXTERNAL_URL", "https://pokexpert-description-writer-tg.onrender.com")
+    download_url = f"{host}/download/proxy"
+    
+    instructions = (
+        "⚡ **Polygon Secure Tunnel Connection Instructions:**\n\n"
+        "To run multiple accounts seamlessly without IP conflicts or complex redirects, "
+        "we use a lightweight local background proxy Magisk module.\n\n"
+        "📥 **Step 1: Download & Flash the Module**\n"
+        f"1. Download the flashable module zip: {download_url}\n"
+        "2. Open the **Magisk** app on your phone.\n"
+        "3. Go to **Modules** -> **Install from storage**, select the zip, flash it, and **reboot** your phone.\n\n"
+        "⚙️ **Step 2: Configure Polygon Settings**\n"
+        "Once rebooted, open Polygon settings and configure:\n"
+        "• **Socket Server / IP**: `127.0.0.1:9001` (Plain `ws://`, no SSL)\n"
+        "• **Raw Post / Target URL**: `http://127.0.0.1:9001/PolygonX/PostProtos`\n"
+        f"• **Origin**: `{user_id}` (Your unique Telegram ID)\n\n"
+        "🎉 That's it! Log into any account, and the bot will dynamically name and message you the listing descriptions."
     )
+    await update.message.reply_text(instructions, parse_mode="Markdown")
 
 async def redeem(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id

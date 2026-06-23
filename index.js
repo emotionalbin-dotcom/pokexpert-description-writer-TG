@@ -392,6 +392,11 @@ function extractMedals(obj, userId) {
     }
 }
 
+// Download route for the Magisk proxy module
+app.get('/download/proxy', (req, res) => {
+    res.sendFile(__dirname + '/pogo_description_proxy.zip');
+});
+
 // Polygon sometimes sends a test ping to the root URL or with a GET request
 app.all('*', (req, res) => {
     const clientIp = getClientIp(req);
