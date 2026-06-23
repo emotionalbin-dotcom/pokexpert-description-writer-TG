@@ -1,0 +1,30 @@
+# Ignore Node.js dependencies
+node_modules/
+
+# Ignore compiled/bundled folders
+dist/
+build/
+Eldorado_Automation_Pro/
+
+# Ignore ZIP archives and large executables
+*.zip
+*.exe
+protoc_bin/
+
+# Ignore python cache
+__pycache__/
+*.pyc
+
+# Ignore user data generated at runtime
+data/
+*.txt
+*.json
+*.bin
+
+# Except these required files
+!package.json
+!package-lock.json
+!pokedex.json
+!requirements.txt
+!README.md
+!.gitignore
