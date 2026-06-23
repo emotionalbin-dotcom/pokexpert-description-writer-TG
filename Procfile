@@ -1,1 +1,1 @@
-web: node index.js & python bot.py
+web: node index.js & python3 bot.py
