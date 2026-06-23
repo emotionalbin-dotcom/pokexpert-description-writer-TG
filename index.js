@@ -29,8 +29,20 @@ const getClientIp = (req) => {
 // Route matching both raw root and hook endpoints
 app.all(['/PolygonX/PostProtos', '/hook/:userId/PolygonX/PostProtos'], async (req, res) => {
     const clientIp = getClientIp(req);
-    // Determine userId from path, or look up by client IP, default to 'default'
-    let userId = req.params.userId || global.ipToUser[clientIp] || 'default';
+    const origin = req.headers['origin'] || req.headers['origin-name'] || req.headers['device'];
+    
+    // Resolve userId:
+    // 1. Path parameter userId (if URL path routing works)
+    // 2. Origin header (if it is a numeric Telegram ID)
+    // 3. Client IP mapping cache
+    let userId = req.params.userId;
+    if (!userId && origin && /^\d+$/.test(origin.trim())) {
+        userId = origin.trim();
+    }
+    if (!userId) {
+        userId = global.ipToUser[clientIp] || 'default';
+    }
+    
     const rawBody = req.body;
     
     if (!rawBody || rawBody.length === 0) {
