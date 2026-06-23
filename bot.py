@@ -24,6 +24,9 @@ flask_app = Flask(__name__)
 # Telegram Bot Application global reference
 tg_application = None
 
+# Event loop reference for thread-safe calls from Flask thread
+telegram_event_loop = None
+
 # Admin configuration
 ADMIN_ID = int(os.environ.get("ADMIN_TELEGRAM_ID", 6040671411)) # Default to user ID if not configured
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8906742255:AAHZuJIAmVKvLD5c8nDNa1lPSGQKJcBIOcA")
@@ -140,7 +143,7 @@ def send_telegram_file(chat_id, filepath, caption=""):
                 caption=caption
             )
             
-    future = asyncio.run_coroutine_threadsafe(_send(), tg_application.loop)
+    future = asyncio.run_coroutine_threadsafe(_send(), telegram_event_loop)
     try:
         future.result(timeout=30)
         return True
@@ -159,7 +162,7 @@ def send_telegram_message(chat_id, text):
             text=text
         )
         
-    future = asyncio.run_coroutine_threadsafe(_send(), tg_application.loop)
+    future = asyncio.run_coroutine_threadsafe(_send(), telegram_event_loop)
     try:
         future.result(timeout=30)
         return True
@@ -898,11 +901,11 @@ async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode="Markdown")
 
 async def main_bot():
-    global tg_application
+    global tg_application, telegram_event_loop
     tg_application = ApplicationBuilder().token(BOT_TOKEN).build()
     
     # Capture active event loop
-    tg_application.loop = asyncio.get_event_loop()
+    telegram_event_loop = asyncio.get_event_loop()
     
     # Add User handlers
     tg_application.add_handler(CommandHandler("start", start))
