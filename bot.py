@@ -637,6 +637,21 @@ def trigger_generate():
         )
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@flask_app.route('/internal/get_user_by_nickname', methods=['GET'])
+def get_user_by_nickname():
+    nickname = request.args.get("nickname")
+    if not nickname:
+        return jsonify({"status": "error", "message": "Missing nickname"}), 400
+        
+    nickname_lower = nickname.strip().lower()
+    db = get_db()
+    nick_key = f"nick_{nickname_lower}"
+    
+    if nick_key in db:
+        return jsonify({"userId": db[nick_key]}), 200
+    else:
+        return jsonify({"status": "not_found", "message": "Nickname not registered"}), 404
+
 def run_flask():
     logger.info("Starting Flask server on port 5000...")
     flask_app.run(host='127.0.0.1', port=5000)
@@ -674,11 +689,48 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     profile = db[user_key]
     ltype = profile.get("type", "single")
+    nickname = profile.get("nickname", "Not registered")
+    
+    status_text = f"👤 **Registered Nickname:** `{nickname}`\n"
     if ltype == "lifetime":
-        await update.message.reply_text("♾️ **License Type:** Lifetime (Unlimited access)\nStatus: Active ✅")
+        status_text += "♾️ **License Type:** Lifetime (Unlimited access)\nStatus: Active ✅"
     else:
         uses = profile.get("uses_left", 0)
-        await update.message.reply_text(f"🎫 **License Type:** Single-use\nRemaining Balance: {uses} account(s)\nStatus: Active ✅")
+        status_text += f"🎫 **License Type:** Single-use\nRemaining Balance: {uses} account(s)\nStatus: Active ✅"
+        
+    await update.message.reply_text(status_text, parse_mode="Markdown")
+
+async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    logger.info(f"User {user_id} triggered /register")
+    
+    if not context.args:
+        await update.message.reply_text("❌ Usage: `/register <in_game_nickname>`")
+        return
+        
+    nickname = context.args[0].strip()
+    nickname_lower = nickname.lower()
+    
+    db = get_db()
+    
+    # Check if this user is licensed
+    user_key = f"user_{user_id}"
+    if user_key not in db:
+        await update.message.reply_text("❌ You need an active license (redeemed key) before registering a nickname.")
+        return
+        
+    # Check if nickname is already registered to someone else
+    nick_key = f"nick_{nickname_lower}"
+    if nick_key in db and db[nick_key] != user_id:
+        await update.message.reply_text("❌ This nickname is already registered to another Telegram account.")
+        return
+        
+    # Map nickname
+    db[nick_key] = user_id
+    db[user_key]["nickname"] = nickname
+    save_db(db)
+    
+    await update.message.reply_text(f"✅ In-game nickname '{nickname}' has been successfully registered to your Telegram ID.")
 
 async def mylink(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -900,6 +952,44 @@ async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     await update.message.reply_text(text, parse_mode="Markdown")
 
+async def get_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("❌ Access Denied: Admin only.")
+        return
+        
+    log_path = "data/incoming_requests.log"
+    if not os.path.exists(log_path) or os.path.getsize(log_path) == 0:
+        await update.message.reply_text("📋 Diagnostic log file is empty or does not exist.")
+        return
+        
+    try:
+        with open(log_path, 'rb') as f:
+            await tg_application.bot.send_document(
+                chat_id=user_id,
+                document=f,
+                filename="incoming_requests.log",
+                caption="📋 Polygon incoming request diagnostic logs!"
+            )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Failed to send logs: {str(e)}")
+
+async def clear_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("❌ Access Denied: Admin only.")
+        return
+        
+    log_path = "data/incoming_requests.log"
+    if os.path.exists(log_path):
+        try:
+            os.remove(log_path)
+            await update.message.reply_text("✅ Diagnostic logs cleared successfully.")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Failed to clear logs: {str(e)}")
+    else:
+        await update.message.reply_text("📋 Logs are already empty.")
+
 async def main_bot():
     global tg_application, telegram_event_loop
     tg_application = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -912,6 +1002,7 @@ async def main_bot():
     tg_application.add_handler(CommandHandler("status", status))
     tg_application.add_handler(CommandHandler("mylink", mylink))
     tg_application.add_handler(CommandHandler("redeem", redeem))
+    tg_application.add_handler(CommandHandler("register", register))
     tg_application.add_handler(CommandHandler("help", help_command))
     
     # Add Admin handlers
@@ -920,6 +1011,8 @@ async def main_bot():
     tg_application.add_handler(CommandHandler("addbalance", add_balance))
     tg_application.add_handler(CommandHandler("setlifetime", set_lifetime))
     tg_application.add_handler(CommandHandler("listusers", list_users))
+    tg_application.add_handler(CommandHandler("getlogs", get_logs))
+    tg_application.add_handler(CommandHandler("clearlogs", clear_logs))
     
     # Start bot Updater
     logger.info("Initializing Telegram bot...")
