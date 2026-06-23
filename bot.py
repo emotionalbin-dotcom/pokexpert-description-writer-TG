@@ -756,8 +756,7 @@ async def mylink(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "3. Go to **Modules** -> **Install from storage**, select the zip, flash it, and **reboot** your phone.\n\n"
         "⚙️ **Step 2: Configure Polygon Settings**\n"
         "Once rebooted, open Polygon settings and configure:\n"
-        "• **Socket Server / IP**: `127.0.0.1:9001` (Plain `ws://`, no SSL)\n"
-        "• **Raw Post / Target URL**: `http://127.0.0.1:9001/PolygonX/PostProtos`\n"
+        "• **Server Address** (or **Host**): `127.0.0.1:9001`\n"
         f"• **Bearer**: `{user_id}` (Your unique Telegram ID)\n\n"
         "🎉 That's it! Log into any account, and the bot will dynamically name and message you the listing descriptions."
     )
