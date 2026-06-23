@@ -1,8 +1,0 @@
-DGowdru Admin - License Manager Guide
-
-* Double-click Key_Manager.exe to manage your customer licenses
-* Press '1' to generate a Permanent Key (locks to a customer's specific PC forever)
-* Press '2' to generate a 1-Use Key (gives the customer 1 run, then burns the key)
-* Press '3' to initialize your Universal Trial Key (DGowdru-UNIVERSAL)
-* Give the 'User_Guide.txt' and 'Description_Writer_Protected.exe' to your customers
-* DO NOT give your customers the Key_Manager.exe file
