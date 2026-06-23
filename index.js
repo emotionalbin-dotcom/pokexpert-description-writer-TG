@@ -30,12 +30,27 @@ const getClientIp = (req) => {
 app.all(['/PolygonX/PostProtos', '/hook/:userId/PolygonX/PostProtos'], async (req, res) => {
     const clientIp = getClientIp(req);
     const origin = req.headers['origin'] || req.headers['origin-name'] || req.headers['device'];
+    const authHeader = req.headers['authorization'];
     
     // Resolve userId:
     // 1. Path parameter userId (if URL path routing works)
-    // 2. Origin header (if it is a numeric Telegram ID)
-    // 3. Client IP mapping cache
+    // 2. Authorization header (Bearer token) if it is a numeric Telegram ID
+    // 3. Origin header (if it is a numeric Telegram ID)
+    // 4. Client IP mapping cache
     let userId = req.params.userId;
+    
+    if (!userId && authHeader) {
+        const trimmedAuth = authHeader.trim();
+        if (trimmedAuth.toLowerCase().startsWith('bearer ')) {
+            const token = trimmedAuth.substring(7).trim();
+            if (/^\d+$/.test(token)) {
+                userId = token;
+            }
+        } else if (/^\d+$/.test(trimmedAuth)) {
+            userId = trimmedAuth;
+        }
+    }
+    
     if (!userId && origin && /^\d+$/.test(origin.trim())) {
         userId = origin.trim();
     }
